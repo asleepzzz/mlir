@@ -552,7 +552,7 @@ static LogicalResult populateHostHarnessLogic(ModuleOp &module, OpBuilder &build
 }
 
 static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builder,
-                                              MLIRContext &context, mlir::FloatType dataType) {
+                                             MLIRContext &context, mlir::FloatType dataType) {
   // Construct main function.
   auto func = FuncOp::create(builder.getUnknownLoc(), "main", builder.getFunctionType({}, {}));
   module.push_back(func);
@@ -778,13 +778,15 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
 
   // Construct a new Block.
   Block *cpuConvFuncOpBlock = cpuConvFuncOp.addEntryBlock();
-  OperationState opState(builder.getUnknownLoc(), "conv");
-  ArrayRef<NamedAttribute> attr={};
-  ArrayAttr s, b;
-  DenseIntElementsAttr p;
+  ArrayAttr strides = builder.getI64ArrayAttr({1, 1});
+  ArrayAttr dilations = builder.getI64ArrayAttr({1, 1} );
+  auto elementsType = RankedTensorType::get({2, 2}, builder.getI32Type());
+  DenseIntElementsAttr padding = DenseIntElementsAttr::get(elementsType, {0,0,0,0});
   auto linalgConvOp = builder.create<linalg::ConvOp>(
-      builder.getUnknownLoc(), opState, filterGpuMemRefCastOp, inputGpuMemRefCastOp,
-                 outputGpuMemRefCastOp, s, b, p);
+      builder.getUnknownLoc(), cpuConvFuncOpBlock->getArgument(0), 
+      cpuConvFuncOpBlock->getArgument(1),cpuConvFuncOpBlock->getArgument(2),
+      strides, dilations, padding);
+  cpuConvFuncOpBlock->push_back(linalgConvOp);
   auto cpuConvFuncOpReturnOp =
       builder.create<ReturnOp>(builder.getUnknownLoc(), ValueRange{});
   cpuConvFuncOpBlock->push_back(cpuConvFuncOpReturnOp);
@@ -826,6 +828,10 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   auto cmpResultAllocOp =
       builder.create<AllocOp>(builder.getUnknownLoc(), resultMemRefType);
   block->push_back(cmpResultAllocOp);
+  auto oneDimUnknownSizeMemRefType = MemRefType::get({1}, builder.getIntegerType(32));
+  auto cmpResultCastOp = builder.create<MemRefCastOp>(
+      builder.getUnknownLoc(), cmpResultAllocOp, oneDimUnknownSizeMemRefType);
+  block->push_back(cmpResultCastOp);
 
   // %c0_i32 = constant 0 : i32
   // %c1_i32 = constant 1 : i32
@@ -835,8 +841,9 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   auto c1ConstantInt32Op = builder.create<ConstantIntOp>(
       builder.getUnknownLoc(), 1, builder.getIntegerType(32));
   block->push_back(c1ConstantInt32Op);
+	// store %c1_i32, %result[%c0] : memref<1xi32>
   auto storeOp1 = builder.create<StoreOp>(
-      builder.getUnknownLoc(), c1ConstantInt32Op, cmpResultAllocOp, ValueRange{c0IndexOp});
+      builder.getUnknownLoc(), c1ConstantInt32Op, cmpResultCastOp, ValueRange{c0IndexOp});
   block->push_back(storeOp1);
 
   // %%c1 = constant 1 : index
@@ -899,7 +906,7 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   auto elseBody = ifOp.getElseBodyBuilder();
    
   auto storeOp0 = elseBody.create<StoreOp>(
-      builder.getUnknownLoc(), c0ConstantInt32Op, cmpResultAllocOp, ValueRange{c0IndexOp});
+      builder.getUnknownLoc(), c0ConstantInt32Op, cmpResultCastOp, ValueRange{c0IndexOp});
 
   block->push_back(loop0);
 
@@ -914,13 +921,13 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
 //    }
  //   auto unrankedMemRefType = UnrankedMemRefType::get(resultMemRefType, 0);
  //   auto printMemRefCastOp = builder.create<MemRefCastOp>(
- //       builder.getUnknownLoc(), cmpResultAllocOp, resultMemRefType);
+ //       builder.getUnknownLoc(), cmpResultCastcOp, resultMemRefType);
     auto printMemRefFuncOp =
         FuncOp::create(builder.getUnknownLoc(), "print_memref_i32",
                        builder.getFunctionType({resultMemRefType}, {}));
     auto printMemRefCallOp =
         builder.create<CallOp>(builder.getUnknownLoc(), printMemRefFuncOp,
-														  ValueRange({cmpResultAllocOp}));
+														  ValueRange({cmpResultCastOp}));
         //                       ValueRange{printMemRefCastOp});
     module.push_back(printMemRefFuncOp);
 //    block->push_back(printMemRefCastOp);
@@ -1131,7 +1138,7 @@ int main(int argc, char **argv) {
   } else if (tensorDataType == "bf16") {
     dataType = builder.getBF16Type();
   }
-
+/*
   llvm::errs()<< arch.getValue()<<' '<< num_cu.getValue()<<' '<< operation.getValue()<<' '<<\
           inputLayout.getValue()<<' '<< outputLayout.getValue()<<' '<<\
           filterLayout.getValue()<<' '<< batchSize.getValue() <<' '<<\
@@ -1141,7 +1148,7 @@ int main(int argc, char **argv) {
           filterWidth.getValue()<<' '<< filterHeight.getValue()<<' '<<\
           dilationHeight.getValue()<<' '<< dilationWidth.getValue()<<' '<<\
           strideHeight.getValue()<<' '<< strideWidth.getValue()<<'\n';
-
+*/
   // Populate the module.
   SmallString<128> kernelName;
   populateDefaults();
@@ -1160,7 +1167,7 @@ int main(int argc, char **argv) {
     llvm::errs() << "Module population failed.\n";
     exit(1);
   }
-
+/*
     llvm::errs()<< arch.getValue()<<' '<< num_cu.getValue()<<' '<< operation.getValue()<<' '<<\
           inputLayout.getValue()<<' '<< outputLayout.getValue()<<' '<<\
           filterLayout.getValue()<<' '<< batchSize.getValue() <<' '<<\
@@ -1170,6 +1177,7 @@ int main(int argc, char **argv) {
           filterWidth.getValue()<<' '<< filterHeight.getValue()<<' '<<\
           dilationHeight.getValue()<<' '<< dilationWidth.getValue()<<' '<<\
           strideHeight.getValue()<<' '<< strideWidth.getValue()<<'\n';
+*/
   // Apply passes.
   if (failed(runMLIRPasses(module, passPipeline, kernelName))) {
     llvm::errs() << "Lowering failed.\n";
