@@ -780,8 +780,8 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   Block *cpuConvFuncOpBlock = cpuConvFuncOp.addEntryBlock();
   ArrayAttr strides = builder.getI64ArrayAttr({1, 1});
   ArrayAttr dilations = builder.getI64ArrayAttr({1, 1} );
-  auto elementsType = RankedTensorType::get({2, 2}, builder.getI32Type());
-  DenseIntElementsAttr padding = DenseIntElementsAttr::get(elementsType, {0,0,0,0});
+  auto elementsType = RankedTensorType::get({2, 2}, builder.getI64Type());
+  DenseIntElementsAttr padding = DenseIntElementsAttr::get(elementsType, ArrayRef<int64_t>{0,0,0,0});
   auto linalgConvOp = builder.create<linalg::ConvOp>(
       builder.getUnknownLoc(), cpuConvFuncOpBlock->getArgument(0), 
       cpuConvFuncOpBlock->getArgument(1),cpuConvFuncOpBlock->getArgument(2),
@@ -822,16 +822,16 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
       builder.getUnknownLoc(), 0);
   block->push_back(c0IndexOp);
   // %result = alloca() : memref<1xi32>
-  SmallVector<int64_t, 1> oneElementVector;
+  SmallVector<int64_t, 1> oneElementVector({1});
   auto resultMemRefType = MemRefType::get(
       ArrayRef<int64_t>(oneElementVector.begin(), oneElementVector.end()), builder.getIntegerType(32));
   auto cmpResultAllocOp =
       builder.create<AllocOp>(builder.getUnknownLoc(), resultMemRefType);
   block->push_back(cmpResultAllocOp);
-  auto oneDimUnknownSizeMemRefType = MemRefType::get({1}, builder.getIntegerType(32));
-  auto cmpResultCastOp = builder.create<MemRefCastOp>(
-      builder.getUnknownLoc(), cmpResultAllocOp, oneDimUnknownSizeMemRefType);
-  block->push_back(cmpResultCastOp);
+  //auto oneDimUnknownSizeMemRefType = MemRefType::get({1}, builder.getIntegerType(32));
+  //auto cmpResultCastOp = builder.create<MemRefCastOp>(
+  //    builder.getUnknownLoc(), cmpResultAllocOp, oneDimUnknownSizeMemRefType);
+  //block->push_back(cmpResultCastOp);
 
   // %c0_i32 = constant 0 : i32
   // %c1_i32 = constant 1 : i32
@@ -843,7 +843,7 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   block->push_back(c1ConstantInt32Op);
 	// store %c1_i32, %result[%c0] : memref<1xi32>
   auto storeOp1 = builder.create<StoreOp>(
-      builder.getUnknownLoc(), c1ConstantInt32Op, cmpResultCastOp, ValueRange{c0IndexOp});
+      builder.getUnknownLoc(), c1ConstantInt32Op, cmpResultAllocOp, ValueRange{c0IndexOp});
   block->push_back(storeOp1);
 
   // %%c1 = constant 1 : index
@@ -906,7 +906,7 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   auto elseBody = ifOp.getElseBodyBuilder();
    
   auto storeOp0 = elseBody.create<StoreOp>(
-      builder.getUnknownLoc(), c0ConstantInt32Op, cmpResultCastOp, ValueRange{c0IndexOp});
+      builder.getUnknownLoc(), c0ConstantInt32Op, cmpResultAllocOp, ValueRange{c0IndexOp});
 
   block->push_back(loop0);
 
@@ -927,12 +927,9 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
                        builder.getFunctionType({resultMemRefType}, {}));
     auto printMemRefCallOp =
         builder.create<CallOp>(builder.getUnknownLoc(), printMemRefFuncOp,
-														  ValueRange({cmpResultCastOp}));
-        //                       ValueRange{printMemRefCastOp});
+			  ValueRange({cmpResultAllocOp}));
     module.push_back(printMemRefFuncOp);
-//    block->push_back(printMemRefCastOp);
     block->push_back(printMemRefCallOp);
-//  }
 
   // Emit GPU memory deallocation function calls.
   StringRef gpuMemDeallocFuncName;
