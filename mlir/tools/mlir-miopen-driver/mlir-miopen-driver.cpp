@@ -585,6 +585,16 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
       ArrayRef<int64_t>(ref2Dimension.begin(), ref2Dimension.end()), dataType);
 
   // Emit CPU alloc.
+//  auto dummy1 =
+//      builder.create<AllocOp>(builder.getUnknownLoc(), filterMemRefType);
+//  auto dummy2 =
+//      builder.create<AllocOp>(builder.getUnknownLoc(), inputMemRefType);
+//  auto dummy3 =
+//      builder.create<AllocOp>(builder.getUnknownLoc(), outputMemRefType);
+  block->push_back(dummy1);
+  block->push_back(dummy2);
+  block->push_back(dummy3);
+
   auto filterHostAllocOp =
       builder.create<AllocOp>(builder.getUnknownLoc(), filterMemRefType);
   auto inputHostAllocOp =
@@ -629,6 +639,7 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   } else if (dataType == builder.getBF16Type()) {
     memsetFuncName = "mcpuMemset4DBF16";
   }
+
   auto mcpuMemset4DFuncOp = FuncOp::create(
       builder.getUnknownLoc(), memsetFuncName,
       builder.getFunctionType(
@@ -787,6 +798,7 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
       cpuConvFuncOpBlock->getArgument(1),cpuConvFuncOpBlock->getArgument(2),
       strides, dilations, padding);
   cpuConvFuncOpBlock->push_back(linalgConvOp);
+
   auto cpuConvFuncOpReturnOp =
       builder.create<ReturnOp>(builder.getUnknownLoc(), ValueRange{});
   cpuConvFuncOpBlock->push_back(cpuConvFuncOpReturnOp);
@@ -794,7 +806,7 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   // Emit conv2d_host function call.
   auto cpuConvCallOp = builder.create<CallOp>(
       builder.getUnknownLoc(), cpuConvFuncOp,
-      ValueRange{filterGpuMemRefCastOp, inputGpuMemRefCastOp,
+      ValueRange{filterHostAllocOp, inputHostAllocOp,
                  ref2HostAllocOp});
   block->push_back(cpuConvCallOp);
 
@@ -828,10 +840,6 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
   auto cmpResultAllocOp =
       builder.create<AllocOp>(builder.getUnknownLoc(), resultMemRefType);
   block->push_back(cmpResultAllocOp);
-  //auto oneDimUnknownSizeMemRefType = MemRefType::get({1}, builder.getIntegerType(32));
-  //auto cmpResultCastOp = builder.create<MemRefCastOp>(
-  //    builder.getUnknownLoc(), cmpResultAllocOp, oneDimUnknownSizeMemRefType);
-  //block->push_back(cmpResultCastOp);
 
   // %c0_i32 = constant 0 : i32
   // %c1_i32 = constant 1 : i32
@@ -919,18 +927,21 @@ static LogicalResult populateValidationLogic(ModuleOp &module, OpBuilder &builde
 //    } else if (dataType == builder.getBF16Type()) {
 //      printMemRefFuncName = "print_memref_bf16";
 //    }
- //   auto unrankedMemRefType = UnrankedMemRefType::get(resultMemRefType, 0);
  //   auto printMemRefCastOp = builder.create<MemRefCastOp>(
  //       builder.getUnknownLoc(), cmpResultCastcOp, resultMemRefType);
+    auto unrankedMemRefType = UnrankedMemRefType::get(builder.getIntegerType(32), 0);
+    auto printMemRefCastOp = builder.create<MemRefCastOp>(
+        builder.getUnknownLoc(), cmpResultAllocOp, unrankedMemRefType);
     auto printMemRefFuncOp =
         FuncOp::create(builder.getUnknownLoc(), "print_memref_i32",
-                       builder.getFunctionType({resultMemRefType}, {}));
+                       builder.getFunctionType({unrankedMemRefType}, {}));
     auto printMemRefCallOp =
         builder.create<CallOp>(builder.getUnknownLoc(), printMemRefFuncOp,
-			  ValueRange({cmpResultAllocOp}));
+                               ValueRange{printMemRefCastOp});
     module.push_back(printMemRefFuncOp);
+    block->push_back(printMemRefCastOp);
     block->push_back(printMemRefCallOp);
-
+    
   // Emit GPU memory deallocation function calls.
   StringRef gpuMemDeallocFuncName;
   if (dataType == builder.getF32Type()) {
@@ -1176,6 +1187,16 @@ int main(int argc, char **argv) {
           strideHeight.getValue()<<' '<< strideWidth.getValue()<<'\n';
 */
 
+  // populate host validation. 
+  if (populateValidation.getValue()) {
+    if (failed(populateValidationLogic(module, builder, context, dataType)) ||
+       failed(
+            populateKernelLaunchLogic(module, builder, context, kernelName)))  {
+      llvm::errs() << "Host validation populated failed.\n";
+      exit(1);
+    }
+  }
+
   // Apply passes.
   if (failed(runMLIRPasses(module, passPipeline, kernelName))) {
     llvm::errs() << "Lowering failed.\n";
@@ -1197,15 +1218,6 @@ int main(int argc, char **argv) {
       exit(1);
     }
   }
- else if (populateValidation.getValue()) {
-    if (failed(populateValidationLogic(module, builder, context, dataType)) ||
-       failed(
-            populateKernelLaunchLogic(module, builder, context, kernelName)))  {
-      llvm::errs() << "Host validation populated failed.\n";
-      exit(1);
-    }         
-  }
-
 
 
   // Set up the output file.
