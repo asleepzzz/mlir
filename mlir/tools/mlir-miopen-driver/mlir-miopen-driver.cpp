@@ -1175,6 +1175,7 @@ int main(int argc, char **argv) {
           dilationHeight.getValue()<<' '<< dilationWidth.getValue()<<' '<<\
           strideHeight.getValue()<<' '<< strideWidth.getValue()<<'\n';
 */
+
   // Apply passes.
   if (failed(runMLIRPasses(module, passPipeline, kernelName))) {
     llvm::errs() << "Lowering failed.\n";
@@ -1195,8 +1196,11 @@ int main(int argc, char **argv) {
       llvm::errs() << "Host logic populated failed.\n";
       exit(1);
     }
-  } else if (populateValidation.getValue()) {
-    if (failed(populateValidationLogic(module, builder, context, dataType))) {
+  }
+ else if (populateValidation.getValue()) {
+    if (failed(populateValidationLogic(module, builder, context, dataType)) ||
+       failed(
+            populateKernelLaunchLogic(module, builder, context, kernelName)))  {
       llvm::errs() << "Host validation populated failed.\n";
       exit(1);
     }         

@@ -18,6 +18,8 @@
 #include "mlir/Conversion/GPUToROCDL/GPUToROCDLPass.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
+#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
+#include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/GPU/GPUDialect.h"
 #include "mlir/Dialect/GPU/Passes.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -306,6 +308,9 @@ static LogicalResult runMLIRPasses(ModuleOp m) {
   kernelPm.addPass(createConvertGPUKernelToBlobPass(
       compileModuleToROCDLIR, compileISAToHsaco, tripleName, targetChip,
       features, /*gpuBinaryAnnotation=*/"rocdl.hsaco"));
+  pm.addPass(createConvertLinalgToAffineLoopsPass());
+  pm.addPass(createLowerAffinePass());
+  pm.addPass(createLowerToCFGPass());
   pm.addPass(createLowerToLLVMPass());
   pm.addPass(createConvertGpuLaunchFuncToGpuRuntimeCallsPass(
       /*gpuBinaryAnnotation=*/"rocdl.hsaco"));
