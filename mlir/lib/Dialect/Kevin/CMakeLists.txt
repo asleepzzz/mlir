@@ -15,4 +15,4 @@ target_link_libraries(MLIRKevinOps
   LLVMSupport
   )
 
-
+add_subdirectory(Transforms)

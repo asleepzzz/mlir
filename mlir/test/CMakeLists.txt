@@ -77,6 +77,7 @@ if(MLIR_VULKAN_RUNNER_ENABLED)
   )
 endif()
 
+list(APPEND MLIR_TEST_DEPENDS mlir-kevin-driver)
 # MIOpen dialect tools.
 if(MLIR_MIOPEN_DRIVER_ENABLED)
   list(APPEND MLIR_TEST_DEPENDS
