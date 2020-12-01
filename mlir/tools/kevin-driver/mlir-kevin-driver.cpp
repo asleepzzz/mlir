@@ -65,7 +65,7 @@ static LogicalResult runMLIRPasses(ModuleOp &module, mlir::PassPipelineCLParser 
     pm.addPass(mlir::createConvertLinalgToAffineLoopsPass());
     pm.addPass(mlir::createLowerAffinePass());
     pm.addPass(mlir::createLowerToCFGPass());
-
+pm.addPass(createLowerToLLVMPass());
 
   return pm.run(module);
 }
@@ -149,20 +149,9 @@ block->push_back(KPerBlockConstantI32Op);
   }
 
 
-//llvm::errs() << "output."<<output->os()<<"\n";
 
   module.print(output->os());
   output->keep();
-
-
-//kevin test
-
-//  InitLLVM y(argc, argv);
-//  llvm::InitializeNativeTarget();
-//  llvm::InitializeNativeTargetAsmPrinter();
-//  mlir::initializeLLVMPasses();
-//  return mlir::JitRunnerMain(argc, argv, nullptr);
-
 
 
 
