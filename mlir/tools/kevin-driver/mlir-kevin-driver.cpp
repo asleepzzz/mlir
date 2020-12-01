@@ -55,10 +55,16 @@ static cl::opt<std::string> outputFilename("o", cl::desc("Output filename"),
                                            cl::value_desc("filename"),
                                            cl::init("-"));
 
+
+static cl::opt<bool> loweringDefault(
+    "c", cl::desc("To lower with default pipeline"),
+    cl::value_desc("To lower with default pipeline"), cl::init(false));
+
 static LogicalResult runMLIRPasses(ModuleOp &module, mlir::PassPipelineCLParser &passPipeline, StringRef kernelName) {
   PassManager pm(module.getContext());
   applyPassManagerCLOptions(pm);
 
+  if (loweringDefault.getValue()) {
     // Passes for lowering Kevin dialect.
     pm.addPass(mlir::kevin::createLowerKevinLowerFirstPass());
     // Passes for lowering linalg dialect.
@@ -66,6 +72,13 @@ static LogicalResult runMLIRPasses(ModuleOp &module, mlir::PassPipelineCLParser 
     pm.addPass(mlir::createLowerAffinePass());
     pm.addPass(mlir::createLowerToCFGPass());
 pm.addPass(createLowerToLLVMPass());
+  }else {
+    // Use lowering pipeline specified at command line.
+    if (failed(passPipeline.addToPipeline(pm)))
+      return failure();
+  }
+
+
 
   return pm.run(module);
 }
