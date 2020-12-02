@@ -54,17 +54,15 @@ struct LowerKevinLowerFirstPass : public KevinLowerFirstPassBase<LowerKevinLower
 
 } // end anonymous namespace
 
-// High level convolution operation always have
-// [filter, input, output]
-// as the convolution argument. The only difference between different
-// hight level convolution operations is the argument sequence. For
-// simplicity, we always arrange the first two arguments to be input
-// and the last argument to be output
-
 
 void LowerKevinLowerFirstPass::runOnOperation() {
   OwningRewritePatternList patterns;
+//  ConversionTarget target(getContext());
+//target.addLegalDialect<kevin::KevinDialect>();
+//target.addIllegalDialect<StandardOpsDialect>();
+
   patterns.insert<KevinMovePosRewritePattern>(&getContext());
+//  applyPartialConversion(getOperation(), target,patterns);
   applyPatternsAndFoldGreedily(getOperation(), patterns);
 }
 

@@ -83,6 +83,9 @@ pm.addPass(createLowerToLLVMPass());
   return pm.run(module);
 }
 
+
+
+
 int main(int argc, char **argv) {
   mlir::registerAllDialects();
   mlir::registerAllPasses();
@@ -111,8 +114,8 @@ llvm::errs() << "=================driver start================" << "\n";
   // Determine data type.
   mlir::IntegerType dataType = builder.getI32Type();
 
-  auto funcType =
-      builder.getFunctionType({ dataType,dataType}, {});
+  auto funcType = builder.getFunctionType({ dataType,dataType}, {});
+//      builder.getFunctionType({ dataType,dataType}, {dataType});
 
 SmallString<128> kernelName;
 kernelName="wulala";
@@ -122,7 +125,6 @@ kernelName="wulala";
   Block *block = func.addEntryBlock();
 
 
-
   MemRefType memrefType = MemRefType::get({2}, dataType);
   AllocOp alloc = builder.create<AllocOp>(builder.getUnknownLoc(), memrefType);
 
@@ -130,21 +132,96 @@ block->push_back(alloc);
 
 
     auto zeroConstantI32Op =
-        builder.create<ConstantIntOp>(builder.getUnknownLoc(), 0, builder.getIntegerType(32));
+        builder.create<ConstantIntOp>(builder.getUnknownLoc(), 1, builder.getIntegerType(32));
 
-    auto KPerBlockConstantI32Op =
+    auto threeConstantI32Op =
         builder.create<ConstantIntOp>(builder.getUnknownLoc(), 3, builder.getIntegerType(32));
 
 block->push_back(zeroConstantI32Op);
-block->push_back(KPerBlockConstantI32Op);
+block->push_back(threeConstantI32Op);
+
+
+
+
+
+
+
+
+//memset start
+
+SmallVector<int64_t, 1> tesnordim;
+tesnordim.push_back(2);
+//tesnordim.push_back(5);
+
+
+  auto kevinMemRefType = MemRefType::get(
+      ArrayRef<int64_t>(tesnordim.begin(), tesnordim.end()), dataType);
+  auto UnknownSizeMemRefType =
+      MemRefType::get({-1}, dataType);
+
+  auto intAllocOp =
+      builder.create<AllocOp>(builder.getUnknownLoc(), kevinMemRefType);
+  block->push_back(intAllocOp);
+
+
+      
+         auto castop = builder.create<MemRefCastOp>(
+               builder.getUnknownLoc(), intAllocOp, UnknownSizeMemRefType);
+                 block->push_back(castop);
+      
+
+  auto memset2DFuncOp = FuncOp::create(
+      builder.getUnknownLoc(), "memset1DIntt",
+      builder.getFunctionType(
+          {UnknownSizeMemRefType, dataType}, {}));
+  module.push_back(memset2DFuncOp);
+		 
+
+    auto CpuMemsetOp = builder.create<CallOp>(
+      builder.getUnknownLoc(), memset2DFuncOp,
+      ValueRange{castop, threeConstantI32Op});
+  block->push_back(CpuMemsetOp);
+//memset over
+
+
+
 
     auto movePosOp = builder.create<kevin::MovePosOp>(
-
-        builder.getUnknownLoc(), alloc,
-        ValueRange{zeroConstantI32Op,KPerBlockConstantI32Op}
+        builder.getUnknownLoc(), intAllocOp,
+        ValueRange{zeroConstantI32Op,threeConstantI32Op}
 	);
 
     block->push_back(movePosOp);
+
+
+
+//printf start
+
+
+		 
+  auto forprintfFuncOp = FuncOp::create(
+      builder.getUnknownLoc(), "forprintf",
+      builder.getFunctionType(
+          {UnknownSizeMemRefType, dataType}, {}));
+  module.push_back(forprintfFuncOp);
+
+
+    auto printOp = builder.create<CallOp>(
+      builder.getUnknownLoc(), forprintfFuncOp,
+      ValueRange{castop, threeConstantI32Op});
+  block->push_back(printOp);
+  
+//printf over
+
+
+  
+
+
+
+
+
+
+
 
   auto returnOp =
       builder.create<ReturnOp>(builder.getUnknownLoc(), ValueRange{});
