@@ -47,12 +47,17 @@ def Kevin_AddOp :
     }];
 }
 
-def Kevin_AddtestOp :
+
+
+def Kevin_AddtestOp:
     Kevin_Op<"addtest">,
-    Arguments<(ins AnyTypeOf<[AnyInteger]>:$value,  Variadic<AnyTypeOf<[AnyInteger]>>:$values)> {
+    Arguments<(ins AnyTypeOf<[AnyInteger, AnyFloat]>:$value,
+                   Variadic<AnyTypeOf<[AnyInteger, AnyFloat]>>:$values)>,
+    Results<(outs AnyTypeOf<[AnyInteger, AnyFloat]>:$output)> {
+
     let summary = "Add values to indices within the memref.";
     let description = [{
-      The `kevin.add` op adds values to indices within the memref.
+      The `addtest` op is multi add.
     }];
 }
 

@@ -23,7 +23,7 @@ class Pass;
 
 namespace kevin {
 std::unique_ptr<Pass> createLowerKevinLowerFirstPass();
-
+std::unique_ptr<OperationPass<FuncOp>> createMultiAddTransPass();
 } // namespace miopen
 } 
 

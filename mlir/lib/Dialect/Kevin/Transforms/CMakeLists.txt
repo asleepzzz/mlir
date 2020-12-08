@@ -1,5 +1,6 @@
 add_mlir_dialect_library(MLIRKevinTransforms
 	LowerKevinOps.cpp
+	MultAddTransToAdds.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${MLIR_MAIN_INCLUDE_DIR}/mlir/Transforms

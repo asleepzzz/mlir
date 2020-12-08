@@ -62,30 +62,38 @@ static void print(OpAsmPrinter &p, AddOp op) {
 }
 
 static LogicalResult verify(AddOp op) { return success(); }
-//kevin test2
+
+
+
+//===================================
+
 static ParseResult parseAddtestOp(OpAsmParser &parser, OperationState &result) {
   SmallVector<OpAsmParser::OperandType, 3> ops;
-  Type srcType;
-  Type indexType = parser.getBuilder().getIndexType();
-
+  SmallVector<Type, 3> types;
+  Type retType;
   auto ret = parser.parseOperandList(ops, OpAsmParser::Delimiter::Paren) ||
-             parser.parseColonType(srcType) ||
-             parser.resolveOperand(ops[0], srcType, result.operands);
+             parser.parseColonTypeList(types)||
+             parser.resolveOperands(ops, types, parser.getNameLoc(), result.operands) ||
+             parser.parseKeywordType("to", retType) ||
+             parser.addTypeToList(retType, result.types); //if you have 2 return value, add 2 types
 
-  for (unsigned i = 1; i < ops.size(); ++i) {
-    ret &= succeeded(parser.resolveOperand(
-        ops[i], srcType, result.operands));
-  }
   return failure(ret);
 }
 
 static void print(OpAsmPrinter &p, AddtestOp op) {
   p << op.getOperationName() << "(" << op.getOperands() << ")";
-  p << " : " << op.getOperands()[0].getType();
+  p << " : " << op.getOperandTypes();
+  p << " to " << op.getType(); //you can ignore this if you know type
 }
 
-static LogicalResult verify(AddtestOp op) { return success(); }
+static LogicalResult verify(AddtestOp op) {
+  auto operands = op.getOperands();
+  if(operands.size() < 2)
+    return success(false);
 
+
+  return success();
+}
 
 
 

@@ -45,6 +45,9 @@
 
 #include "llvm/ADT/SmallVector.h"
 
+#include "mlir/IR/Function.h"
+
+
 using namespace mlir;
 
 namespace {
@@ -55,12 +58,18 @@ struct LowerKevinLowerFirstPass : public KevinLowerFirstPassBase<LowerKevinLower
 } // end anonymous namespace
 
 
+
+
 void LowerKevinLowerFirstPass::runOnOperation() {
   OwningRewritePatternList patterns;
 //  ConversionTarget target(getContext());
 //target.addLegalDialect<kevin::KevinDialect>();
 //target.addIllegalDialect<StandardOpsDialect>();
 
+
+
+
+  patterns.insert<KevinAddtestRewritePattern>(&getContext());
   patterns.insert<KevinMovePosRewritePattern>(&getContext());
 //  applyPartialConversion(getOperation(), target,patterns);
   applyPatternsAndFoldGreedily(getOperation(), patterns);

@@ -16,5 +16,9 @@ def KevinLowerFirstPass : Pass<"kevin-lowerfirst", "ModuleOp"> {
   let constructor = "mlir::kevin::createLowerKevinLowerFirstPass()";
 }
 
+def MultAddTransToAdds : FunctionPass<"multiaddtoadds"> {
+  let summary = "multiaddop translate to some adds op";
+  let constructor = "mlir::kevin::createMultiAddTransPass()";
+}
 
 #endif // MLIR_DIALECT_KEVIN_PASSES

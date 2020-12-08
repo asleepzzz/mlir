@@ -41,6 +41,49 @@
 
 
 using namespace mlir;
+struct KevinAddtestRewritePattern : public OpRewritePattern<kevin::AddtestOp> {
+  using OpRewritePattern<kevin::AddtestOp>::OpRewritePattern;
+
+  LogicalResult matchAndRewrite(kevin::AddtestOp op,
+                                PatternRewriter &b) const override {
+//    auto loc = op.getLoc();
+//    auto size = op.getOperands().size();
+//    auto numType = op.value().getType();//value is in kevinops.td
+
+//    if (numType.isa<IntegerType>()) {
+//              llvm::errs() << "Hello2: "<<size;
+	          //auto iter = b.create<ConstantIndexOp>(loc, );
+
+              //for (unsigned i = 2; i < size; i++) {
+              //   add = b.create<AddIOp>(loc, add, op.getOperand(i));
+              //}
+//	auto add = b.create<AddIOp>(loc,op.getOperand(0), op.getOperand(1) );
+//	add = b.create<AddIOp>(loc, add, op.getOperand(2));
+	//Value added;
+        //for (unsigned i = 2; i < size; ++i) {
+	//     added = b.create<AddIOp>(loc, add, op.getOperand(i));
+//	}
+
+//    } else {
+//	     llvm::errs() << "Hello: ";
+ //   }
+
+//pattern rewriter will be optimize if no store op ,need to find out 	  
+    auto loc = op.getLoc();
+    auto operands = op.getOperands();
+   
+
+    Value add = b.create<AddIOp>(loc, op.getOperand(0), op.getOperand(1));
+    for (unsigned i = 2; i < operands.size(); i++) {
+      add = b.create<AddIOp>(loc, add, op.getOperand(i));
+    }
+    //must do that, so flow operation can use return value
+    op.output().replaceAllUsesWith(add);
+    op.erase();
+
+  }
+};
+
 
 
 //===----------------------------------------------------------------------===//
@@ -55,7 +98,6 @@ struct KevinMovePosRewritePattern : public OpRewritePattern<kevin::MovePosOp> {
 
     auto loc = op.getLoc();
     auto memrefType = op.memref().getType().cast<MemRefType>();
-
     for (unsigned i = 0; i < memrefType.getShape()[0]; ++i) {
       auto iter = b.create<ConstantIndexOp>(loc, i);
       // load
@@ -70,6 +112,7 @@ struct KevinMovePosRewritePattern : public OpRewritePattern<kevin::MovePosOp> {
       // store
       auto store = b.create<StoreOp>(loc, add, op.memref(), ValueRange{iter});
     }
+
     op.erase();
     return success();
   }

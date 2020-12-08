@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "MlirParse.h"
 #include "mlir/Dialect/Kevin/KevinOps.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
@@ -66,12 +67,13 @@ static LogicalResult runMLIRPasses(ModuleOp &module, mlir::PassPipelineCLParser 
 
   if (loweringDefault.getValue()) {
     // Passes for lowering Kevin dialect.
-    pm.addPass(mlir::kevin::createLowerKevinLowerFirstPass());
+    pm.addPass(mlir::kevin::createMultiAddTransPass());//-multiaddtoadds
+    pm.addPass(mlir::kevin::createLowerKevinLowerFirstPass());//--kevin-lowerfirst
     // Passes for lowering linalg dialect.
     pm.addPass(mlir::createConvertLinalgToAffineLoopsPass());
     pm.addPass(mlir::createLowerAffinePass());
     pm.addPass(mlir::createLowerToCFGPass());
-pm.addPass(createLowerToLLVMPass());
+      pm.addPass(createLowerToLLVMPass());
   }else {
     // Use lowering pipeline specified at command line.
     if (failed(passPipeline.addToPipeline(pm)))
@@ -125,12 +127,6 @@ kernelName="wulala";
   Block *block = func.addEntryBlock();
 
 
-  MemRefType memrefType = MemRefType::get({2}, dataType);
-  AllocOp alloc = builder.create<AllocOp>(builder.getUnknownLoc(), memrefType);
-
-block->push_back(alloc);
-
-
     auto zeroConstantI32Op =
         builder.create<ConstantIntOp>(builder.getUnknownLoc(), 1, builder.getIntegerType(32));
 
@@ -139,6 +135,54 @@ block->push_back(alloc);
 
 block->push_back(zeroConstantI32Op);
 block->push_back(threeConstantI32Op);
+
+
+
+
+
+
+    auto twoConstantI32Op =
+        builder.create<ConstantIntOp>(builder.getUnknownLoc(), 2, builder.getIntegerType(32));
+
+    auto fourConstantI32Op =
+        builder.create<ConstantIntOp>(builder.getUnknownLoc(), 4, builder.getIntegerType(32));
+
+block->push_back(twoConstantI32Op);
+block->push_back(fourConstantI32Op);
+
+
+
+
+    auto twoConstantF32Op = builder.create<ConstantFloatOp>(builder.getUnknownLoc(), APFloat(2.0f), builder.getF32Type());
+
+    auto fourConstantF32Op = builder.create<ConstantFloatOp>(builder.getUnknownLoc(), APFloat(4.0f), builder.getF32Type());
+//        builder.create<ConstantFloatOp>(builder.getUnknownLoc(), APFloat((4.0f), builder.getF32Type());
+
+block->push_back(twoConstantF32Op);
+block->push_back(fourConstantF32Op);
+
+
+    auto addTestOp = builder.create<kevin::AddtestOp>(
+        builder.getUnknownLoc(), builder.getF32Type(), twoConstantF32Op,
+        ValueRange{twoConstantF32Op,fourConstantF32Op}
+        );
+
+
+//    auto addTestOp = builder.create<kevin::AddtestOp>(
+//        builder.getUnknownLoc(), dataType, threeConstantI32Op,
+//        ValueRange{twoConstantI32Op,fourConstantI32Op}
+//        );
+
+    block->push_back(addTestOp);
+
+
+
+//below is not multi add  
+
+  MemRefType memrefType = MemRefType::get({2}, dataType);
+  AllocOp alloc = builder.create<AllocOp>(builder.getUnknownLoc(), memrefType);
+
+block->push_back(alloc);
 
 
 
