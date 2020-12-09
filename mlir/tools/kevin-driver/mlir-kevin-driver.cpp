@@ -57,6 +57,12 @@ static cl::opt<std::string> outputFilename("o", cl::desc("Output filename"),
                                            cl::init("-"));
 
 
+static cl::opt<std::string> data_format("data_format",
+                                         cl::desc("int or float"),
+                                         cl::value_desc("int or float"),
+                                         cl::init("int"));
+
+
 static cl::opt<bool> loweringDefault(
     "c", cl::desc("To lower with default pipeline"),
     cl::value_desc("To lower with default pipeline"), cl::init(false));
@@ -161,19 +167,24 @@ block->push_back(fourConstantI32Op);
 block->push_back(twoConstantF32Op);
 block->push_back(fourConstantF32Op);
 
-
+if(data_format == "float")
+{
     auto addTestOp = builder.create<kevin::AddtestOp>(
         builder.getUnknownLoc(), builder.getF32Type(), twoConstantF32Op,
         ValueRange{twoConstantF32Op,fourConstantF32Op}
         );
 
-
-//    auto addTestOp = builder.create<kevin::AddtestOp>(
-//        builder.getUnknownLoc(), dataType, threeConstantI32Op,
-//        ValueRange{twoConstantI32Op,fourConstantI32Op}
-//        );
-
     block->push_back(addTestOp);
+} else
+{
+    auto addTestOp = builder.create<kevin::AddtestOp>(
+        builder.getUnknownLoc(), dataType, threeConstantI32Op,
+        ValueRange{twoConstantI32Op,fourConstantI32Op}
+        );
+    block->push_back(addTestOp);
+
+}
+
 
 
 
