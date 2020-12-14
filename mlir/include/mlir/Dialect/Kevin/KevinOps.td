@@ -51,7 +51,7 @@ def Kevin_AddOp :
 
 def Kevin_AddtestOp:
     Kevin_Op<"addtest">,
-    Arguments<(ins AnyTypeOf<[AnyInteger, AnyFloat]>:$value,
+    Arguments<(ins
                    Variadic<AnyTypeOf<[AnyInteger, AnyFloat]>>:$values)>,
     Results<(outs AnyTypeOf<[AnyInteger, AnyFloat]>:$output)> {
 

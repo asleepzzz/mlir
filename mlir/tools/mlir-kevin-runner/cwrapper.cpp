@@ -5,7 +5,8 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/Support/raw_ostream.h"
 
-
+extern "C" void kevin_print_f32(float f) { printf("kevin float results is %f\n", f); }
+extern "C" void kevin_print_i32(int d) { printf("kevin int results is %d\n", d); }
 
 extern "C" void memset1DIntt(int *allocated, int *aligned,
                                   int64_t offset, int64_t size0,

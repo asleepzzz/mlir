@@ -13,8 +13,8 @@
 #ifndef MLIR_TOOLS_MLIR_KEVIN_DRIVER_MLIRPARSE_H_
 #define MLIR_TOOLS_MLIR_KEVIN_DRIVER_MLIRPARSE_H_
 
-#include "mlir/Dialect/Kevin/KevinOps.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+//#include "mlir/Dialect/Kevin/KevinOps.h"
+//#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/Attributes.h"
 #include "mlir/IR/Block.h"
 #include "mlir/IR/Builders.h"
@@ -100,6 +100,7 @@ std::string translateLayout(const Vector &src, const Vector &srcSpec,
   return targetLayout;
 }
 
+/*
 static LogicalResult populateConvolutionLogic(
     std::string &arch, int num_cu, std::string &operation,
     std::string &inputLayout, std::string &outputLayout,
@@ -197,6 +198,6 @@ llvm::errs() << "===========kevin parse================"<<filterLayout<<" "<<fil
 
   return success();
 }
-
+*/
 } // namespace mlir
 #endif // MLIR_TOOLS_MLIR_KEVIN_DRIVER_MLIRPARSE_H_

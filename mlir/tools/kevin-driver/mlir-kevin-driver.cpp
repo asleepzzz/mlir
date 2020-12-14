@@ -62,6 +62,10 @@ static cl::opt<std::string> data_format("data_format",
                                          cl::value_desc("int or float"),
                                          cl::init("int"));
 
+static cl::opt<std::string> data("data",
+                                         cl::desc("inpiut data"),
+                                         cl::value_desc("input data"),
+                                         cl::init("20,30,40"));
 
 static cl::opt<bool> loweringDefault(
     "c", cl::desc("To lower with default pipeline"),
@@ -74,7 +78,7 @@ static LogicalResult runMLIRPasses(ModuleOp &module, mlir::PassPipelineCLParser 
   if (loweringDefault.getValue()) {
     // Passes for lowering Kevin dialect.
     pm.addPass(mlir::kevin::createMultiAddTransPass());//-multiaddtoadds
-    pm.addPass(mlir::kevin::createLowerKevinLowerFirstPass());//--kevin-lowerfirst
+//    pm.addPass(mlir::kevin::createLowerKevinLowerFirstPass());//--kevin-lowerfirst
     // Passes for lowering linalg dialect.
     pm.addPass(mlir::createConvertLinalgToAffineLoopsPass());
     pm.addPass(mlir::createLowerAffinePass());
@@ -92,7 +96,17 @@ static LogicalResult runMLIRPasses(ModuleOp &module, mlir::PassPipelineCLParser 
 }
 
 
-
+std::vector<std::string> split(const std::string& s, char delimiter)
+{
+   std::vector<std::string> tokens;
+   std::string token;
+   std::istringstream tokenStream(s);
+   while (std::getline(tokenStream, token, delimiter))
+   {
+      tokens.push_back(token);
+   }
+   return tokens;
+}
 
 int main(int argc, char **argv) {
   mlir::registerAllDialects();
@@ -105,8 +119,14 @@ int main(int argc, char **argv) {
   // Parse pass names in main to ensure static initialization completed.
   cl::ParseCommandLineOptions(argc, argv, "MLIR Kevin Dialect driver\n");
 
+  std::vector<std::string> parameters = split(data, ',');
+  if(parameters.size() < 2){
+    llvm::errs() << "can not add" << "\n";
+    exit(1);
+  }
 
-llvm::errs() << "=================driver start================" << "\n";
+
+llvm::errs() << "=================driver start ,data size is " << parameters.size()<<"================\n";
 
 
 
@@ -122,8 +142,41 @@ llvm::errs() << "=================driver start================" << "\n";
   // Determine data type.
   mlir::IntegerType dataType = builder.getI32Type();
 
-  auto funcType = builder.getFunctionType({ dataType,dataType}, {});
-//      builder.getFunctionType({ dataType,dataType}, {dataType});
+    auto kevinprintf32FuncOp = FuncOp::create(
+      builder.getUnknownLoc(), "kevin_print_f32",
+      builder.getFunctionType(
+          {builder.getF32Type()}, {}));
+    module.push_back(kevinprintf32FuncOp);
+               
+    auto kevinprinti32FuncOp = FuncOp::create(
+      builder.getUnknownLoc(), "kevin_print_i32",
+      builder.getFunctionType(
+          {builder.getI32Type()}, {}));
+    module.push_back(kevinprinti32FuncOp);
+ 
+
+
+  auto funcType = builder.getFunctionType({ }, {});
+llvm::SmallVector<mlir::Type,2> functiontypes;
+
+
+    if(data_format == "float")
+    {
+        for(unsigned i = 0; i < parameters.size(); i++){
+            functiontypes.push_back(builder.getF32Type());
+        }
+
+    } else 
+    {
+	for(unsigned i = 0; i < parameters.size(); i++){
+            functiontypes.push_back(builder.getI32Type());
+        }
+    }
+ 
+
+
+funcType = builder.getFunctionType({functiontypes }, {functiontypes[0]});
+
 
 SmallString<128> kernelName;
 kernelName="wulala";
@@ -131,65 +184,20 @@ kernelName="wulala";
   module.push_back(func);
 
   Block *block = func.addEntryBlock();
+  auto args = block->getArguments();
 
 
-    auto zeroConstantI32Op =
-        builder.create<ConstantIntOp>(builder.getUnknownLoc(), 1, builder.getIntegerType(32));
-
-    auto threeConstantI32Op =
-        builder.create<ConstantIntOp>(builder.getUnknownLoc(), 3, builder.getIntegerType(32));
-
-block->push_back(zeroConstantI32Op);
-block->push_back(threeConstantI32Op);
-
-
-
-
-
-
-    auto twoConstantI32Op =
-        builder.create<ConstantIntOp>(builder.getUnknownLoc(), 2, builder.getIntegerType(32));
-
-    auto fourConstantI32Op =
-        builder.create<ConstantIntOp>(builder.getUnknownLoc(), 4, builder.getIntegerType(32));
-
-block->push_back(twoConstantI32Op);
-block->push_back(fourConstantI32Op);
-
-
-
-
-    auto twoConstantF32Op = builder.create<ConstantFloatOp>(builder.getUnknownLoc(), APFloat(2.0f), builder.getF32Type());
-
-    auto fourConstantF32Op = builder.create<ConstantFloatOp>(builder.getUnknownLoc(), APFloat(4.0f), builder.getF32Type());
-//        builder.create<ConstantFloatOp>(builder.getUnknownLoc(), APFloat((4.0f), builder.getF32Type());
-
-block->push_back(twoConstantF32Op);
-block->push_back(fourConstantF32Op);
-
-if(data_format == "float")
-{
     auto addTestOp = builder.create<kevin::AddtestOp>(
-        builder.getUnknownLoc(), builder.getF32Type(), twoConstantF32Op,
-        ValueRange{twoConstantF32Op,fourConstantF32Op}
+        builder.getUnknownLoc(), functiontypes[0],
+	ValueRange{args}
         );
 
     block->push_back(addTestOp);
-} else
-{
-    auto addTestOp = builder.create<kevin::AddtestOp>(
-        builder.getUnknownLoc(), dataType, threeConstantI32Op,
-        ValueRange{twoConstantI32Op,fourConstantI32Op}
-        );
-    block->push_back(addTestOp);
-
-}
-
 
 
 
 //below is not multi add  
-
+/*
   MemRefType memrefType = MemRefType::get({2}, dataType);
   AllocOp alloc = builder.create<AllocOp>(builder.getUnknownLoc(), memrefType);
 
@@ -269,18 +277,78 @@ tesnordim.push_back(2);
 //printf over
 
 
-  
+  */
 
 
 
 
 
-
+//multiAddOp
 
 
   auto returnOp =
-      builder.create<ReturnOp>(builder.getUnknownLoc(), ValueRange{});
+      builder.create<ReturnOp>(builder.getUnknownLoc(), ValueRange{addTestOp});
   block->push_back(returnOp);
+
+
+
+
+
+  //call wulala
+  {
+    auto mainType = builder.getFunctionType({}, {});
+    auto main = FuncOp::create(builder.getUnknownLoc(), "verifyAdd", mainType);
+    module.push_back(main);
+    Block *secondBlock = main.addEntryBlock();
+    llvm::SmallVector<mlir::Value,2> parameters_of_call_wulala;
+
+
+    for(unsigned i = 0; i < parameters.size(); i++){
+        if (data_format == "float") {	    
+            auto constantData = builder.create<ConstantFloatOp>(
+            builder.getUnknownLoc(), APFloat((float)std::atof(parameters[i].c_str())), builder.getF32Type());
+            parameters_of_call_wulala.push_back(constantData);
+            secondBlock->push_back(constantData);
+
+        } else {
+	    auto constantData = builder.create<ConstantIntOp>(
+            builder.getUnknownLoc(), (int)std::atoi(parameters[i].c_str()),builder.getIntegerType(32));
+            parameters_of_call_wulala.push_back(constantData);
+	    secondBlock->push_back(constantData);
+        }
+    }
+
+
+
+
+    auto callWulalaOp =
+        builder.create<CallOp>(builder.getUnknownLoc(), func,
+                               parameters_of_call_wulala);
+
+    secondBlock->push_back(callWulalaOp);
+
+    //print
+    
+    if (data_format == "float") {
+      auto callPrintfOp = builder.create<CallOp>(
+      builder.getUnknownLoc(), kevinprintf32FuncOp,
+      ValueRange{callWulalaOp.getResults()});
+      secondBlock->push_back(callPrintfOp);
+    } else {
+      auto callPrintfOp = builder.create<CallOp>(
+      builder.getUnknownLoc(), kevinprinti32FuncOp,
+      ValueRange{callWulalaOp.getResults()});
+      secondBlock->push_back(callPrintfOp);
+    }
+
+    auto mainReturnOp =
+        builder.create<ReturnOp>(builder.getUnknownLoc(), ValueRange{});
+    secondBlock->push_back(mainReturnOp);
+
+  }
+
+
+
 
   if (failed(runMLIRPasses(module, passPipeline, kernelName))) {
     llvm::errs() << "Lowering failed.\n";

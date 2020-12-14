@@ -25,17 +25,17 @@ void MultAddTransToAdds::runOnFunction() {
     auto operands = op.getOperands();
 
     OpBuilder b(op.getOperation());
-    auto numType = op.value().getType();
+    auto numType = op.values()[0].getType();
 
     Value add;
     if (numType.isa<IntegerType>()) {
-    llvm::errs() << "Hello:int \n ";
+    llvm::errs() << "lowering multi int ,need to fix in rewritepattern in the future\n ";
         add = b.create<AddIOp>(loc, op.getOperand(0), op.getOperand(1));
         for (unsigned i = 2; i < operands.size(); i++) {
           add = b.create<AddIOp>(loc, add, op.getOperand(i));
         }
     } else {
-    llvm::errs() << "Hello:float \n ";
+    llvm::errs() << "lowering multi float ,need to fix in rewritepattern in the future\n ";
         add = b.create<AddFOp>(loc, op.getOperand(0), op.getOperand(1));
         for (unsigned i = 2; i < operands.size(); i++) {
           add = b.create<AddFOp>(loc, add, op.getOperand(i));
