@@ -139,6 +139,8 @@ llvm::errs() << "=================driver start ,data size is " << parameters.siz
   OwningModuleRef moduleRef;
     module = ModuleOp::create(builder.getUnknownLoc());
 
+//APFloat kevinbf16test(APFloat::BFloat(), "1.2");
+
   // Determine data type.
   mlir::IntegerType dataType = builder.getI32Type();
 
