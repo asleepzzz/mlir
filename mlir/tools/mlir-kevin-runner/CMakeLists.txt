@@ -24,9 +24,9 @@ target_link_libraries(cwrapper
   set(LIBS
     ${dialect_libs}
     ${conversion_libs}
-    lldCommon
-    lldDriver
-    lldELF
+    #   lldCommon
+    #lldDriver
+    #lldELF
     LLVMCore
     LLVMLTO
     LLVMMC
