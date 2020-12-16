@@ -35,6 +35,7 @@ set(MLIR_TEST_DEPENDS
   FileCheck count not
   MLIRUnitTests
   mlir-cpu-runner
+  mlir-kevin-runner
   mlir-edsc-builder-api-test
   mlir-linalg-ods-gen
   mlir-opt
