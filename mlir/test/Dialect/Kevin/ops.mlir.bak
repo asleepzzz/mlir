@@ -1,0 +1,12 @@
+// RUN: mlir-opt %s | FileCheck %s
+// RUN: mlir-opt %s | mlir-opt | FileCheck %s
+// Run: mlir-opt -mlir-print-op-generic %s | mlir-opt | FileCheck %s
+// this part generated from ./bin/mlir-kevin-driver -data_format=int -data=1,4,6,2
+// and  ./bin/mlir-kevin-driver -data_format=float
+
+// CHECK-LABEL: func @kevin_print_f32
+func @kevin_print_f32(f32)
+func @kevin_print_i32(i32)
+
+
+
