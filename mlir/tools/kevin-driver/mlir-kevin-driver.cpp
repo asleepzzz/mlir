@@ -67,6 +67,12 @@ static cl::opt<std::string> data("data",
                                          cl::value_desc("input data"),
                                          cl::init("20,30,40"));
 
+// use host harness program.
+static cl::opt<bool> useHostHarness(
+    "host", cl::desc("To use host harness"),
+    cl::value_desc("To use host harness"), cl::init(false));
+
+
 static cl::opt<bool> loweringDefault(
     "c", cl::desc("To lower with default pipeline"),
     cl::value_desc("To lower with default pipeline"), cl::init(false));
@@ -126,9 +132,7 @@ int main(int argc, char **argv) {
   }
 
 
-llvm::errs() << "=================driver start ,data size is " << parameters.size()<<"================\n";
-
-
+    llvm::errs() << "=================driver start ,data size is " << parameters.size()<<"================\n";
 
   MLIRContext context;
   OpBuilder builder(&context);
@@ -137,7 +141,26 @@ llvm::errs() << "=================driver start ,data size is " << parameters.siz
   std::string errorMessage;
   SourceMgr sourceMgr;
   OwningModuleRef moduleRef;
+  if (useHostHarness.getValue())
+  {
+    llvm::errs() << "=================use HostHarness input  " << inputFilename<<"================\n";
+    auto file = openInputFile(inputFilename, &errorMessage);
+    if (!file) {
+      llvm::errs() << errorMessage << "\n";
+      exit(1);
+    }
+
+    // Parse the input file.
+    sourceMgr.AddNewSourceBuffer(std::move(file), SMLoc());
+    moduleRef = parseSourceFile(sourceMgr, &context);
+    if (!moduleRef) {
+      llvm::errs() << "Parse host harness " << inputFilename << " failed.\n";
+      exit(1);
+    }
+    module = moduleRef.get();
+  } else {
     module = ModuleOp::create(builder.getUnknownLoc());
+  }
 
 //APFloat kevinbf16test(APFloat::BFloat(), "1.2");
 
