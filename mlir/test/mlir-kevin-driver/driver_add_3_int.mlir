@@ -1,8 +1,8 @@
 // RUN: mlir-kevin-driver  | FileCheck %s --check-prefix=BEFORE
-// RUN: mlir-kevin-driver -multiaddtoadds %s | FileCheck %s --check-prefix=LOWERING
-// RUN: mlir-kevin-driver -multiaddtoadds -convert-std-to-llvm %s | FileCheck %s --check-prefix=LLVM_D
-// RUN: mlir-kevin-driver -multiaddtoadds -convert-std-to-llvm %s| mlir-translate   -mlir-to-llvmir | FileCheck %s --check-prefix=LLVM
-// RUN: mlir-kevin-driver -multiaddtoadds -convert-std-to-llvm %s| mlir-cpu-runner -O3 -e verifyAdd -entry-point-result=void -shared-libs=%kevin_wrapper_library_dir/libmlir_runner_utils%shlibext,%kevin_wrapper_library_dir/libcwrapper%shlibext | FileCheck %s --check-prefix=E2E
+// RUN: mlir-kevin-driver -multiaddtoadds  | FileCheck %s --check-prefix=LOWERING
+// RUN: mlir-kevin-driver -multiaddtoadds -convert-std-to-llvm  | FileCheck %s --check-prefix=LLVM_D
+// RUN: mlir-kevin-driver -multiaddtoadds -convert-std-to-llvm  | mlir-translate   -mlir-to-llvmir | FileCheck %s --check-prefix=LLVM
+// RUN: mlir-kevin-driver -multiaddtoadds -convert-std-to-llvm  | mlir-cpu-runner -O3 -e verifyAdd -entry-point-result=void -shared-libs=%kevin_wrapper_library_dir/libmlir_runner_utils%shlibext,%kevin_wrapper_library_dir/libcwrapper%shlibext | FileCheck %s --check-prefix=E2E
 // BEFORE: module
 // BEFORE: func @kevin_print_f32(f32)
 // BEFORE: func @kevin_print_i32(i32)
