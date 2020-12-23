@@ -40,6 +40,7 @@ config.cuda_wrapper_library_dir = "@MLIR_CUDA_WRAPPER_LIBRARY_DIR@"
 config.enable_cuda_runner = @MLIR_CUDA_RUNNER_ENABLED@
 config.run_rocm_tests = @MLIR_ROCM_CONVERSIONS_ENABLED@
 config.rocm_wrapper_library_dir = "@MLIR_ROCM_WRAPPER_LIBRARY_DIR@"
+config.kevin_wrapper_library_dir = "@MLIR_KEVIN_WRAPPER_LIBRARY_DIR@"
 config.enable_rocm_runner = @MLIR_ROCM_RUNNER_ENABLED@
 config.enable_miopen_driver = @MLIR_MIOPEN_DRIVER_ENABLED@
 config.enable_kevin_driver = @MLIR_KEVIN_DRIVER_ENABLED@

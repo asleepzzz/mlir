@@ -163,6 +163,8 @@ int main(int argc, char **argv) {
   }
 
 //APFloat kevinbf16test(APFloat::BFloat(), "1.2");
+SmallString<128> kernelName;
+kernelName="wulala";
 
   // Determine data type.
   mlir::IntegerType dataType = builder.getI32Type();
@@ -203,8 +205,6 @@ llvm::SmallVector<mlir::Type,2> functiontypes;
 funcType = builder.getFunctionType({functiontypes }, {functiontypes[0]});
 
 
-SmallString<128> kernelName;
-kernelName="wulala";
   auto func = FuncOp::create(builder.getUnknownLoc(), kernelName, funcType);
   module.push_back(func);
 
@@ -371,7 +371,6 @@ tesnordim.push_back(2);
     secondBlock->push_back(mainReturnOp);
 
   }
-
 
 
 
